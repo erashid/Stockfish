@@ -674,8 +674,7 @@ namespace {
     if (   !PvNode
         &&  depth < 4 * ONE_PLY
         &&  eval + razor_margin(depth) <= alpha
-        &&  ttMove == MOVE_NONE
-        && !pos.pawn_on_7th(pos.side_to_move()))
+        &&  ttMove == MOVE_NONE)
     {
         if (   depth <= ONE_PLY
             && eval + razor_margin(3 * ONE_PLY) <= alpha)
@@ -902,7 +901,7 @@ moves_loop: // When in check and at SpNode search starts from here
           // Futility pruning: parent node
           if (predictedDepth < 7 * ONE_PLY)
           {
-              futilityValue =  ss->staticEval + futility_margin(predictedDepth) + 256;
+              futilityValue = ss->staticEval + futility_margin(predictedDepth) + 256;
 
               if (futilityValue <= alpha)
               {
@@ -959,7 +958,10 @@ moves_loop: // When in check and at SpNode search starts from here
                                         [pos.piece_on(to_sq(move))][to_sq(move)] <= VALUE_ZERO))
               ss->reduction += ONE_PLY;
 
-          if (move == countermove)
+          if (    move == countermove
+              || (   History[pos.piece_on(to_sq(move))][to_sq(move)] > VALUE_ZERO
+                  && CounterMovesHistory[pos.piece_on(prevMoveSq)][prevMoveSq]
+                                        [pos.piece_on(to_sq(move))][to_sq(move)] > VALUE_ZERO))
               ss->reduction = std::max(DEPTH_ZERO, ss->reduction - ONE_PLY);
 
           // Decrease reduction for moves that escape a capture
@@ -974,13 +976,6 @@ moves_loop: // When in check and at SpNode search starts from here
               alpha = splitPoint->alpha;
 
           value = -search<NonPV, false>(pos, ss+1, -(alpha+1), -alpha, d, true);
-
-          // Re-search at intermediate depth if reduction is very high
-          if (value > alpha && ss->reduction >= 4 * ONE_PLY)
-          {
-              Depth d2 = std::max(newDepth - 2 * ONE_PLY, ONE_PLY);
-              value = -search<NonPV, false>(pos, ss+1, -(alpha+1), -alpha, d2, true);
-          }
 
           doFullDepthSearch = (value > alpha && ss->reduction != DEPTH_ZERO);
           ss->reduction = DEPTH_ZERO;
@@ -1432,7 +1427,7 @@ moves_loop: // When in check and at SpNode search starts from here
     }
 
     // Extra penalty for TT move in previous ply when it gets refuted
-    if (is_ok((ss-2)->currentMove) && (ss-1)->currentMove == (ss-1)->ttMove)
+    if (is_ok((ss-2)->currentMove) && (ss-1)->currentMove == (ss-1)->ttMove && !pos.captured_piece_type())
     {
         Square prevPrevSq = to_sq((ss-2)->currentMove);
         HistoryStats& ttMoveCmh = CounterMovesHistory[pos.piece_on(prevPrevSq)][prevPrevSq];
