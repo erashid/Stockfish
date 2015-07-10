@@ -262,7 +262,11 @@ namespace {
         if (Pt == QUEEN)
             b &= ~(  ei.attackedBy[Them][KNIGHT]
                    | ei.attackedBy[Them][BISHOP]
-                   | ei.attackedBy[Them][ROOK]);
+                   | ei.attackedBy[Them][ROOK])
+                | (  ei.attackedBy[Us][PAWN]
+                   | ei.attackedBy[Us][KNIGHT]
+                   | ei.attackedBy[Us][BISHOP]
+                   | ei.attackedBy[Us][ROOK]);
 
         int mob = popcount<Pt == QUEEN ? Full : Max15>(b & mobilityArea[Us]);
 
